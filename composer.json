@@ -11,7 +11,7 @@
         "psr-4": {
             "MIA3\\Saku\\": "src/"
         }
-    }
+    },
     "suggests": {
         "algolia/algoliasearch-client-php": "Needed for the AlgoliaAdapter"
     }
