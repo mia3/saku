@@ -118,58 +118,76 @@ class MySQLAdapter implements IndexAdapterInterface
         }
         return array(
             'results' => $results,
-            'total' => $this->getTotal($query)
+            'total' => $this->getTotal($query, $options)
         );
     }
 
     public function getContents($query, $options) {
-        $statement = $this->connection->prepare(sprintf(
-            'SELECT * 
-            FROM %scontents
-            JOIN %sobjects ON %scontents.object = %sobjects.id
-            WHERE 
-                MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE)
-                AND field IN (?)
-            LIMIT ? OFFSET ?
-            ',
-            $this->configuration['table_prefix'],
-            $this->configuration['table_prefix'],
-            $this->configuration['table_prefix'],
-            $this->configuration['table_prefix']
-        ));
-
         $limit = isset($options['resultsPerPage']) ? $options['resultsPerPage'] : 10;
         $offset = isset($options['page']) ? (($options['page']+1) * $options['resultsPerPage']) : 0;
-        $statement->bind_param(
-            'ssii',
-            $query,
-            $this->configuration['search_fields'],
-            $limit,
-            $offset
-        );
+        $statement = $this->prepareStatement($query, $options, $limit, $offset);
         $statement->execute();
         return $statement->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function getTotal($query) {
-        $statement = $this->connection->prepare(sprintf(
-            'SELECT * 
-            FROM %scontents
-            JOIN %sobjects ON %scontents.object = %sobjects.id
-            WHERE 
-                MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE)
-                AND field IN (?)
-            ',
-            $this->configuration['table_prefix'],
-            $this->configuration['table_prefix'],
-            $this->configuration['table_prefix'],
-            $this->configuration['table_prefix']
-        ));
-        $statement->bind_param(
-            'ss',
-            $query,
-            $this->configuration['search_fields']
+    public function prepareStatement($query, $options, $limit, $offset) {
+        $joins = array();
+        $wheres = array();
+
+        $contentsTable = $this->configuration['table_prefix'] . 'contents';
+        $objectsTable = $this->configuration['table_prefix'] . 'objects';
+        if (isset($options['facets'])) {
+            foreach($options['facets'] as $facet => $value) {
+                $joins[] = sprintf(
+                    'JOIN %s as facet_%s 
+                        ON rootContents.object = facet_%s.object' . chr(10),
+                    $contentsTable,
+                    $facet,
+                    $facet
+                );
+                $wheres[] = sprintf(
+                    'facet_%s.field = "%s" AND facet_%s.content = "%s"' . chr(10),
+                    $facet,
+                    $facet,
+                    $facet,
+                    $value
+                );
+            }
+        }
+
+        $searchFields = array();
+        foreach(explode(',', $this->configuration['search_fields']) as $searchField) {
+            $searchFields[] = '"' . $searchField . '"';
+        }
+        $wheres[] = sprintf(
+            'MATCH(rootContents.content) AGAINST("%s" IN NATURAL LANGUAGE MODE) AND rootContents.field IN (%s)',
+            $this->connection->real_escape_string($query),
+            implode(',', $searchFields)
         );
+        $joins[] = sprintf(
+            'JOIN %s ON rootContents.object = %s.id',
+            $objectsTable,
+            $objectsTable
+        );
+
+        $query = sprintf(
+            'SELECT * 
+            FROM %s as  rootContents
+            ' . implode(" \n", $joins) . '
+            WHERE 
+                ' . implode(" AND ", $wheres) . '
+            LIMIT %s OFFSET %s
+            ',
+            $contentsTable,
+            $limit,
+            $offset
+        );
+        $statement = $this->connection->prepare($query);
+        return $statement;
+    }
+
+    public function getTotal($query, $options) {
+        $statement = $this->prepareStatement($query, $options, PHP_INT_MAX, 0);
         $statement->execute();
         return $statement->get_result()->num_rows;
     }
