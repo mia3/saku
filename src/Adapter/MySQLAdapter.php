@@ -124,7 +124,7 @@ class MySQLAdapter implements IndexAdapterInterface
 
     public function getContents($query, $options) {
         $limit = isset($options['resultsPerPage']) ? $options['resultsPerPage'] : 10;
-        $offset = isset($options['page']) ? (($options['page']+1) * $options['resultsPerPage']) : 0;
+        $offset = isset($options['page']) ? (($options['page']) * $options['resultsPerPage']) : 0;
         $statement = $this->prepareStatement($query, $options, $limit, $offset);
         $statement->execute();
         return $statement->get_result()->fetch_all(MYSQLI_ASSOC);
