@@ -12,7 +12,8 @@
             "MIA3\\Saku\\": "src/"
         }
     },
-    "suggests": {
-        "algolia/algoliasearch-client-php": "Needed for the AlgoliaAdapter"
+    "requires": {
+        "elasticsearch/elasticsearch": "^2.2",
+        "algolia/algoliasearch-client-php": "^1.10"
     }
 }
