@@ -12,7 +12,7 @@
             "MIA3\\Saku\\": "src/"
         }
     },
-    "requires": {
+    "require": {
         "elasticsearch/elasticsearch": "^2.2",
         "algolia/algoliasearch-client-php": "^1.10"
     }

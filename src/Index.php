@@ -16,8 +16,11 @@ class Index
      */
     protected $adapter;
 
-    public function __construct($adapterConfiguration) {
-        $this->adapter = new $adapterConfiguration['adapter']($adapterConfiguration);
+    protected $configuration;
+
+    public function __construct($configuration) {
+        $this->configuration =$configuration;
+        $this->adapter = new $configuration['adapter']($configuration);
     }
 
     public function addObject($object, $objectId) {
@@ -27,5 +30,14 @@ class Index
     public function search($query, $options = array()) {
         $searchResults = new SearchResults($this->adapter, $query, $options);
         return $searchResults;
+    }
+
+    public function getFacets() {
+        $facets = array();
+        foreach ($this->configuration['facets'] as $facetName => $facet) {
+            $facets[$facetName] = $facet;
+            $facets[$facetName]['options'] = $this->adapter->getFacet($facet);
+        }
+        return $facets;
     }
 }

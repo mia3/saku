@@ -11,8 +11,18 @@ class ElasticSearchAdapter implements IndexAdapterInterface
      */
     protected $client;
 
+    /**
+     * array of default parameters used in all queries towards
+     * elasticsearch
+     *
+     * @var array
+     */
     protected $defaultParams;
 
+    /**
+     * ElasticSearchAdapter constructor.
+     * @param $configuration
+     */
     public function __construct($configuration)
     {
         $configuration = array_replace(
@@ -24,84 +34,70 @@ class ElasticSearchAdapter implements IndexAdapterInterface
         );
         $this->defaultParams = array(
             'index' => $configuration['index'],
-            'type' => $configuration['type']
+            'type' => $configuration['type'],
         );
-        $this->client = ClientBuilder::create()->setHosts($configuration['hosts'])->build();
-
-//        $params = ['index' => $configuration['index']];
-//        $response = $this->client->indices()->delete($params);
-
-        $params['index']  = $configuration['index'];
-        if ($this->client->indices()->exists($params) == FALSE) {
-            $params = [
-                'index' => $configuration['index'],
-                'body' => [
-                    $configuration['type'] => [
-                        '_source' => [
-                            'enabled' => true
-                        ],
-                        "_timestamp" => [
-                            "enabled" => true
-                        ],
-                        'properties' => [
-                            'id' => [
-                                'type' => 'integer'
-                            ],
-                            'pageUrl' => [
-                                'type' => 'string',
-                                'analyzer' => 'standard'
-                            ],
-                            'L' => [
-                                'type' => 'integer'
-                            ],
-                            'pageTitle' => [
-                                'type' => 'string'
-                            ],
-                            'content' => [
-                                'type' => 'string'
-                            ],
-                            "indexedAt" => [
-                                "type" => "date"
-                            ]
-                        ]
-                    ]
-                ]
-            ];
-
-            $this->client->indices()->create($params);
+        if (is_string($configuration['hosts'])) {
+            $configuration['hosts'] = explode(',', $configuration['hosts']);
         }
-
-//        $this->client->indices()->putMapping($params);
+        $this->client = ClientBuilder::create()->setHosts($configuration['hosts'])->build();
+        $this->initializeIndex($configuration, $params);
     }
 
-    public function addObject($object, $objectId) {
+    /**
+     * add an object to the elasticsearch index
+     *
+     * @param $object
+     * @param $objectId
+     * @return string
+     */
+    public function addObject($object, $objectId)
+    {
         $objectId = sha1($objectId);
         $params = array_replace(
             $this->defaultParams,
             array(
                 'id' => $objectId,
-                'body' => $object
+                'body' => $object,
             )
         );
         $this->client->index($params);
+
         return $objectId;
     }
 
-    public function search($query, $options) {
+    /**
+     * search the index
+     *
+     * @param $query
+     * @param $options
+     * @return array
+     */
+    public function search($query, $options)
+    {
         $limit = isset($options['resultsPerPage']) ? $options['resultsPerPage'] : 10;
         $offset = (isset($options['page']) ? (($options['page']) * $options['resultsPerPage']) : 0);
+
+        $filter = [];
+        if (isset($options['facets']) && !empty($options['facets'])) {
+            $filter["term"] = $options['facets'];
+        }
         $params = array_replace(
             $this->defaultParams,
             [
                 'size' => $limit,
-                'from' =>  $offset,
+                'from' => $offset,
                 'body' => [
                     'query' => [
-                        'match' => [
-                            'content' => $query
+                        "filtered" => [
+                            "query" => [
+                                "match" => [
+                                    "content" => $query
+                                ],
+                            ],
+                            "filter" => $filter
                         ]
-                    ]
-                ]
+                    ],
+                ],
             ]
         );
 
@@ -110,10 +106,98 @@ class ElasticSearchAdapter implements IndexAdapterInterface
         foreach ($results['hits']['hits'] as $hit) {
             $hits[] = $hit['_source'];
         }
+
         return array(
             'results' => $hits,
-            'total' => $results['hits']['total']
+            'total' => $results['hits']['total'],
         );
+    }
+
+    /**
+     * load all options of a facet
+     *
+     * @param array $facet
+     * @return array
+     */
+    public function getFacet($facet)
+    {
+        $params = array_replace(
+            $this->defaultParams,
+            [
+                'size' => 0,
+                'body' => [
+                    "aggs" => [
+                        "facet" => [
+                            "terms" => [
+                                "field" => $facet['field'],
+                            ],
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        $results = $this->client->search($params);
+        $options = array();
+        foreach ($results['aggregations']['facet']['buckets'] as $bucket) {
+            $options[] = array(
+                'value' => $bucket['key'],
+                'count' => $bucket['doc_count'],
+            );
+        }
+
+        return $options;
+    }
+
+    /**
+     * @param $configuration
+     * @param $params
+     */
+    public function initializeIndex($configuration, $params)
+    {
+//        $params = ['index' => $configuration['index']];
+//        $response = $this->client->indices()->delete($params);
+
+        $params['index'] = $configuration['index'];
+        if ($this->client->indices()->exists($params) == false) {
+            $params = [
+                'index' => $configuration['index'],
+                'body' => [
+                    $configuration['type'] => [
+                        '_source' => [
+                            'enabled' => true,
+                        ],
+                        "_timestamp" => [
+                            "enabled" => true,
+                        ],
+                        'properties' => [
+                            'id' => [
+                                'type' => 'integer',
+                            ],
+                            'pageUrl' => [
+                                'type' => 'string',
+                                'analyzer' => 'standard',
+                            ],
+                            'L' => [
+                                'type' => 'integer',
+                            ],
+                            'pageTitle' => [
+                                'type' => 'string',
+                            ],
+                            'content' => [
+                                'type' => 'string',
+                            ],
+                            "indexedAt" => [
+                                "type" => "date",
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            $this->client->indices()->create($params);
+        }
+//        $this->client->indices()->putMapping($params);
     }
 
 }

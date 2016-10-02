@@ -63,4 +63,8 @@ class AlgoliaAdapter implements IndexAdapterInterface
         );
     }
 
+    public function getFacets($facet) {
+        return array();
+    }
+
 }

@@ -66,19 +66,31 @@ class MySQLAdapter implements IndexAdapterInterface
         $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"', $this->configuration['table_prefix'], $id));
 
         foreach($object as $key => $value) {
-            if (is_array($value) || is_object($value)) {
+            if (is_array($value)) {
+                foreach ($value as $childValue) {
+                    if (is_array($childValue) || is_object($childValue)) {
+                        continue;
+                    }
+                    $this->insertContent($id, $key, $childValue);
+                }
+            } else if (is_object($value)) {
                 continue;
+            } else {
+                $this->insertContent($id, $key, $value);
             }
-            $query = $this->connection->prepare(sprintf('
+        }
+    }
+
+    protected function insertContent($id, $key, $value) {
+        $query = $this->connection->prepare(sprintf('
                 INSERT INTO %scontents
                     (object, field, content) 
                     VALUES(?, ?, ?)
                 ',
-                $this->configuration['table_prefix']
-            ));
-            $query->bind_param("iss", $id, $key, $value);
-            $query->execute();
-        }
+            $this->configuration['table_prefix']
+        ));
+        $query->bind_param("iss", $id, $key, $value);
+        $query->execute();
     }
 
     public function getObject($objectId, $data) {
@@ -114,7 +126,10 @@ class MySQLAdapter implements IndexAdapterInterface
         $contents = $this->getContents($query, $options);
         $results = array();
         foreach ($contents as $content) {
-            $results[] = unserialize($content['data']);
+            $results[] = array_replace(
+                $content,
+                unserialize($content['data'])
+            );
         }
         return array(
             'results' => $results,
@@ -136,6 +151,7 @@ class MySQLAdapter implements IndexAdapterInterface
 
         $contentsTable = $this->configuration['table_prefix'] . 'contents';
         $objectsTable = $this->configuration['table_prefix'] . 'objects';
+
         if (isset($options['facets'])) {
             foreach($options['facets'] as $facet => $value) {
                 $joins[] = sprintf(
@@ -160,10 +176,11 @@ class MySQLAdapter implements IndexAdapterInterface
             $searchFields[] = '"' . $searchField . '"';
         }
         $wheres[] = sprintf(
-            'MATCH(rootContents.content) AGAINST("%s" IN NATURAL LANGUAGE MODE) AND rootContents.field IN (%s)',
+            'MATCH(rootContents.content) AGAINST ("%s" IN NATURAL LANGUAGE MODE) AND rootContents.field IN (%s)',
             $this->connection->real_escape_string($query),
             implode(',', $searchFields)
         );
+        $select = sprintf('*, MATCH(rootContents.content) AGAINST ("%s" IN NATURAL LANGUAGE MODE) AS score', $this->connection->real_escape_string($query));
         $joins[] = sprintf(
             'JOIN %s ON rootContents.object = %s.id',
             $objectsTable,
@@ -171,13 +188,15 @@ class MySQLAdapter implements IndexAdapterInterface
         );
 
         $query = sprintf(
-            'SELECT * 
+            'SELECT %s
             FROM %s as  rootContents
             ' . implode(" \n", $joins) . '
             WHERE 
                 ' . implode(" AND ", $wheres) . '
+            ORDER BY score DESC
             LIMIT %s OFFSET %s
             ',
+            $select,
             $contentsTable,
             $limit,
             $offset
@@ -190,5 +209,21 @@ class MySQLAdapter implements IndexAdapterInterface
         $statement = $this->prepareStatement($query, $options, PHP_INT_MAX, 0);
         $statement->execute();
         return $statement->get_result()->num_rows;
+    }
+
+    public function getFacet($configuration) {
+        $contentsTable = $this->configuration['table_prefix'] . 'contents';
+        $query = sprintf(
+            'SELECT field, content as value, count(id) as count
+            FROM %s 
+            WHERE field = "%s"
+            GROUP BY content
+            ',
+            $contentsTable,
+            $configuration['field']
+        );
+        $statement = $this->connection->prepare($query);
+        $statement->execute();
+        return $statement->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 }
