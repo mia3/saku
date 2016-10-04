@@ -176,7 +176,7 @@ class MySQLAdapter implements IndexAdapterInterface
             $searchFields[] = '"' . $searchField . '"';
         }
         $wheres[] = sprintf(
-            'MATCH(rootContents.content) AGAINST ("%s" IN NATURAL LANGUAGE MODE) AND rootContents.field IN (%s)',
+            '(MATCH(rootContents.content) AGAINST ("%1$s" IN NATURAL LANGUAGE MODE) OR rootContents.content LIKE "%%%%%1$s%%%%") AND rootContents.field IN (%2$s)',
             $this->connection->real_escape_string($query),
             implode(',', $searchFields)
         );
