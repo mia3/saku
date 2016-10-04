@@ -82,4 +82,16 @@ class SearchResults extends ArrayIterator
         $this->changed = true;
         $this->options['page'] = $page;
     }
+
+    public function getItemsFrom() {
+        return ($this->options['resultsPerPage'] * $this->options['page']) + 1;
+    }
+
+    public function getItemsTo() {
+        $to = $this->options['resultsPerPage'] * ($this->options['page'] + 1);
+        if ($to > $this->getTotal()) {
+            return $this->total;
+        }
+        return $to;
+    }
 }
