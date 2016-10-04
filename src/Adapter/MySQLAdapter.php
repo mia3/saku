@@ -180,7 +180,10 @@ class MySQLAdapter implements IndexAdapterInterface
             $this->connection->real_escape_string($query),
             implode(',', $searchFields)
         );
-        $select = sprintf('*, MATCH(rootContents.content) AGAINST ("%s" IN NATURAL LANGUAGE MODE) AS score', $this->connection->real_escape_string($query));
+        $select = sprintf(
+            '*, MATCH(rootContents.content) AGAINST ("%s" IN NATURAL LANGUAGE MODE) AS score',
+            $this->connection->real_escape_string($query)
+        );
         $joins[] = sprintf(
             'JOIN %s ON rootContents.object = %s.id',
             $objectsTable,
