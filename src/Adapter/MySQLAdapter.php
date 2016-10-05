@@ -21,14 +21,14 @@ class MySQLAdapter implements IndexAdapterInterface
     public function __construct($configuration)
     {
         $this->configuration = array_replace(array(
-            'database' => NULL,
+            'database' => null,
             'host' => 'localhost',
-            'username' => NULL,
-            'port' => NULL,
-            'socket' => NULL,
+            'username' => null,
+            'port' => null,
+            'socket' => null,
             'table_prefix' => 'saku_',
             'mysql_engine' => 'MyISAM',
-            'search_fields' => 'content'
+            'search_fields' => 'pageTitle, content',
         ), $configuration);
 
         $this->connection = new \mysqli(
@@ -61,11 +61,13 @@ class MySQLAdapter implements IndexAdapterInterface
         ', $this->configuration['table_prefix'], $this->configuration['mysql_engine']));
     }
 
-    public function addObject($object, $objectId) {
+    public function addObject($object, $objectId)
+    {
         $id = $this->getObject($objectId, serialize($object));
-        $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"', $this->configuration['table_prefix'], $id));
+        $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"',
+            $this->configuration['table_prefix'], $id));
 
-        foreach($object as $key => $value) {
+        foreach ($object as $key => $value) {
             if (is_array($value)) {
                 foreach ($value as $childValue) {
                     if (is_array($childValue) || is_object($childValue)) {
@@ -73,15 +75,18 @@ class MySQLAdapter implements IndexAdapterInterface
                     }
                     $this->insertContent($id, $key, $childValue);
                 }
-            } else if (is_object($value)) {
-                continue;
             } else {
-                $this->insertContent($id, $key, $value);
+                if (is_object($value)) {
+                    continue;
+                } else {
+                    $this->insertContent($id, $key, $value);
+                }
             }
         }
     }
 
-    protected function insertContent($id, $key, $value) {
+    protected function insertContent($id, $key, $value)
+    {
         $query = $this->connection->prepare(sprintf('
                 INSERT INTO %scontents
                     (object, field, content) 
@@ -93,8 +98,10 @@ class MySQLAdapter implements IndexAdapterInterface
         $query->execute();
     }
 
-    public function getObject($objectId, $data) {
-        $query = sprintf('SELECT id FROM %sobjects WHERE objectId = "%s"', $this->configuration['table_prefix'], $objectId);
+    public function getObject($objectId, $data)
+    {
+        $query = sprintf('SELECT id FROM %sobjects WHERE objectId = "%s"', $this->configuration['table_prefix'],
+            $objectId);
         $result = $this->connection->query($query);
         $row = $result->fetch_assoc();
         if (isset($row['id'])) {
@@ -107,6 +114,7 @@ class MySQLAdapter implements IndexAdapterInterface
             ));
             $query->bind_param("si", $data, $row['id']);
             $query->execute();
+
             return intval($row['id']);
         }
 
@@ -119,10 +127,12 @@ class MySQLAdapter implements IndexAdapterInterface
         ));
         $query->bind_param("ss", $objectId, $data);
         $query->execute();
+
         return $query->insert_id;
     }
 
-    public function search($query, $options) {
+    public function search($query, $options)
+    {
         $contents = $this->getContents($query, $options);
         $results = array();
         foreach ($contents as $content) {
@@ -131,21 +141,25 @@ class MySQLAdapter implements IndexAdapterInterface
                 unserialize($content['data'])
             );
         }
+
         return array(
             'results' => $results,
-            'total' => $this->getTotal($query, $options)
+            'total' => $this->getTotal($query, $options),
         );
     }
 
-    public function getContents($query, $options) {
+    public function getContents($query, $options)
+    {
         $limit = isset($options['resultsPerPage']) ? $options['resultsPerPage'] : 10;
         $offset = isset($options['page']) ? (($options['page']) * $options['resultsPerPage']) : 0;
         $statement = $this->prepareStatement($query, $options, $limit, $offset);
         $statement->execute();
+
         return $statement->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-    public function prepareStatement($query, $options, $limit, $offset) {
+    public function prepareStatement($query, $options, $limit, $offset)
+    {
         $joins = array();
         $wheres = array();
 
@@ -153,7 +167,7 @@ class MySQLAdapter implements IndexAdapterInterface
         $objectsTable = $this->configuration['table_prefix'] . 'objects';
 
         if (isset($options['facets'])) {
-            foreach($options['facets'] as $facet => $value) {
+            foreach ($options['facets'] as $facet => $value) {
                 $joins[] = sprintf(
                     'JOIN %s as facet_%s 
                         ON rootContents.object = facet_%s.object' . chr(10),
@@ -172,11 +186,14 @@ class MySQLAdapter implements IndexAdapterInterface
         }
 
         $searchFields = array();
-        foreach(explode(',', $this->configuration['search_fields']) as $searchField) {
-            $searchFields[] = '"' . $searchField . '"';
+        foreach (explode(',', $this->configuration['search_fields']) as $searchField) {
+            $searchFields[] = '"' . trim($searchField) . '"';
         }
         $wheres[] = sprintf(
-            '(MATCH(rootContents.content) AGAINST ("%1$s" IN NATURAL LANGUAGE MODE) OR rootContents.content LIKE "%%%%%1$s%%%%") AND rootContents.field IN (%2$s)',
+            '(
+                MATCH(rootContents.content) AGAINST ("%1$s" IN NATURAL LANGUAGE MODE) 
+                OR rootContents.content LIKE "%%%%%1$s%%%%"
+             ) AND rootContents.field IN (%2$s)',
             $this->connection->real_escape_string($query),
             implode(',', $searchFields)
         );
@@ -205,16 +222,20 @@ class MySQLAdapter implements IndexAdapterInterface
             $offset
         );
         $statement = $this->connection->prepare($query);
+
         return $statement;
     }
 
-    public function getTotal($query, $options) {
+    public function getTotal($query, $options)
+    {
         $statement = $this->prepareStatement($query, $options, PHP_INT_MAX, 0);
         $statement->execute();
+
         return $statement->get_result()->num_rows;
     }
 
-    public function getFacet($configuration) {
+    public function getFacet($configuration)
+    {
         $contentsTable = $this->configuration['table_prefix'] . 'contents';
         $query = sprintf(
             'SELECT field, content as value, count(id) as count
@@ -227,6 +248,7 @@ class MySQLAdapter implements IndexAdapterInterface
         );
         $statement = $this->connection->prepare($query);
         $statement->execute();
+
         return $statement->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 }
