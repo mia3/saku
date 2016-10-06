@@ -213,11 +213,13 @@ class MySQLAdapter implements IndexAdapterInterface
             ' . implode(" \n", $joins) . '
             WHERE 
                 ' . implode(" AND ", $wheres) . '
+            GROUP BY %s.id
             ORDER BY score DESC
             LIMIT %s OFFSET %s
             ',
             $select,
             $contentsTable,
+            $objectsTable,
             $limit,
             $offset
         );
