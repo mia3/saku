@@ -116,7 +116,7 @@ class SearchWordHighlighter
 
     public function cutBeforeMatch($content, $words)
     {
-        $contentWords = preg_split('/[\s]/s', $content);
+        $contentWords = preg_split('/[\s]/s', trim($content));
         $word = reset($words);
         foreach ($contentWords as $key => $contentWord) {
             similar_text(strtolower(trim($contentWord)), strtolower(trim($word)), $match);
