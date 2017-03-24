@@ -84,7 +84,7 @@ class SearchWordHighlighter
     public function highlight($words)
     {
         if (!is_array($words)) {
-            $words = preg_split('/[ ,\.\?]/s', $words);
+            $words = preg_split('/[ ,\.\?]/s', trim($words));
         }
 
         $string = $this->string;
@@ -96,7 +96,6 @@ class SearchWordHighlighter
         if ($this->crop !== null) {
             $string = $this->cropWords($string);
         }
-//        var_dump($words, $string);
 
         $replacement = str_replace('|', '$0', $this->wrap);
         foreach ($words as $word) {
