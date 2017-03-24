@@ -1,14 +1,14 @@
 <?php
 namespace MIA3\Saku;
 
-    /*
-     * This file is part of the mia3/saku package.
-     *
-     * (c) Marc Neuhaus <marc@mia3.com>
-     *
-     * For the full copyright and license information, please view the LICENSE
-     * file that was distributed with this source code.
-     */
+/*
+ * This file is part of the mia3/saku package.
+ *
+ * (c) Marc Neuhaus <marc@mia3.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 /**
  * Class WrapWordsViewHelper
@@ -96,19 +96,12 @@ class SearchWordHighlighter
         if ($this->crop !== null) {
             $string = $this->cropWords($string);
         }
+//        var_dump($words, $string);
 
+        $replacement = str_replace('|', '$0', $this->wrap);
         foreach ($words as $word) {
-            // do a case-insensitive search to find all case-sensitive matches
-            preg_match_all('/(' . preg_quote($word) . ')/i', $string, $matches);
-
-            if (count($matches[0]) > 0) {
-                // replace each found case-sensitive match with it's wrapped
-                // counterpart
-                foreach ($matches[0] as $key => $match) {
-                    $wrappedMatch = str_replace('|', $match, $this->wrap);
-                    $string = str_replace($match, $wrappedMatch, $string);
-                }
-            }
+            // do a case-insensitive replace to find all case-sensitive matches
+            $string = preg_replace('/' . preg_quote($word, '/') . '/i', $replacement, $string);
         }
 
         return trim($string);
