@@ -85,6 +85,18 @@ class MySQLAdapter implements IndexAdapterInterface
         }
     }
 
+    public function removeObject($objectId)
+    {
+        $query = sprintf('SELECT id FROM %sobjects WHERE objectId = "%s"', $this->configuration['table_prefix'],
+            $objectId);
+        $result = $this->connection->query($query);
+        $row = $result->fetch_assoc();
+        $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"',
+            $this->configuration['table_prefix'], intval($row['id'])));
+        $this->connection->query(sprintf('DELETE FROM %sobjects WHERE id = "%s"',
+            $this->configuration['table_prefix'], intval($row['id'])));
+    }
+
     protected function insertContent($id, $key, $value)
     {
         $query = $this->connection->prepare(sprintf('
@@ -98,7 +110,7 @@ class MySQLAdapter implements IndexAdapterInterface
         $query->execute();
     }
 
-    public function getObject($objectId, $data)
+    public function getObject($objectId, $data = null)
     {
         $query = sprintf('SELECT id FROM %sobjects WHERE objectId = "%s"', $this->configuration['table_prefix'],
             $objectId);

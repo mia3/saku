@@ -27,6 +27,10 @@ class Index
         $this->adapter->addObject($object, $objectId);
     }
 
+    public function removeObject($objectId) {
+        $this->adapter->removeObject($object, $objectId);
+    }
+
     public function search($query, $options = array()) {
         $searchResults = new SearchResults($this->adapter, $query, $options);
         return $searchResults;
