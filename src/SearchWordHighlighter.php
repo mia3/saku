@@ -84,8 +84,12 @@ class SearchWordHighlighter
     public function highlight($words)
     {
         if (!is_array($words)) {
-            $words = preg_split('/[ ,\.\?\+\-]/s', trim($words, ' ,.?+-'));
+            $words = preg_split('/[ ,\.\?\-]/s', trim($words, ' ,.?+-'));
         }
+
+        $words = array_filter($words, function($word){
+            return strlen($word) > 1;
+        });
 
         $string = $this->string;
 
