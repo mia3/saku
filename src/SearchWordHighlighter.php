@@ -104,7 +104,7 @@ class SearchWordHighlighter
         $replacement = str_replace('|', '$0', $this->wrap);
         foreach ($words as $word) {
             // do a case-insensitive replace to find all case-sensitive matches
-            $string = preg_replace('/' . preg_quote($word, '/') . '/i', $replacement, $string);
+            $string = preg_replace('/' . preg_quote($word, '/') . '/iu', $replacement, $string);
         }
 
         return trim($string);

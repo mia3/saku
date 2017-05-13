@@ -27,6 +27,8 @@ class MySQLAdapter implements IndexAdapterInterface
             'port' => null,
             'socket' => null,
             'table_prefix' => 'saku_',
+            'character_set' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
             'mysql_engine' => 'MyISAM',
             'search_fields' => 'pageTitle, content',
         ), $configuration);
@@ -41,27 +43,42 @@ class MySQLAdapter implements IndexAdapterInterface
         );
 
         $this->connection->query(sprintf('
-            CREATE TABLE IF NOT EXISTS `%sobjects` (
-                `id` int NOT NULL AUTO_INCREMENT,
-                `objectId` varchar(4096) NOT NULL,
-                `data` longblob NOT NULL,
-                PRIMARY KEY (`id`)
-            ) ENGINE=`%s`;
-        ', $this->configuration['table_prefix'], $this->configuration['mysql_engine']));
+                CREATE TABLE IF NOT EXISTS `%sobjects` (
+                    `id` int NOT NULL AUTO_INCREMENT,
+                    `objectId` varchar(4096) NOT NULL,
+                    `index` varchar(4096) NOT NULL,
+                    `data` longblob NOT NULL,
+                    `created` int NOT NULL,
+                    `updated` int NOT NULL,
+                    PRIMARY KEY (`id`)
+                ) ENGINE=`%s` DEFAULT CHARACTER SET %s COLLATE %s;
+            ',
+            $this->configuration['table_prefix'],
+            $this->configuration['mysql_engine'],
+            $this->configuration['character_set'],
+            $this->configuration['collation']
+        ));
 
         $this->connection->query(sprintf('
-            CREATE TABLE IF NOT EXISTS `%scontents` (
-                `id` int NOT NULL AUTO_INCREMENT,
-                `object` int NOT NULL,
-                `field` varchar(1024) NOT NULL,
-                `content` longtext,
-                PRIMARY KEY (`id`),
-                FULLTEXT `content` (content)
-            ) ENGINE=`%s`;
-        ', $this->configuration['table_prefix'], $this->configuration['mysql_engine']));
+                CREATE TABLE IF NOT EXISTS `%scontents` (
+                    `id` int NOT NULL AUTO_INCREMENT,
+                    `object` int NOT NULL,
+                    `field` varchar(1024) NOT NULL,
+                    `content` longtext,
+                    `created` int NOT NULL,
+                    `updated` int NOT NULL,
+                    PRIMARY KEY (`id`),
+                    FULLTEXT `content` (content)
+                ) ENGINE=`%s` DEFAULT CHARACTER SET %s COLLATE %s;
+            ',
+            $this->configuration['table_prefix'],
+            $this->configuration['mysql_engine'],
+            $this->configuration['character_set'],
+            $this->configuration['collation']
+        ));
     }
 
-    public function addObject($object, $objectId)
+    public function addObject($object, $objectId, $indexName = null)
     {
         $id = $this->getObject($objectId, serialize($object));
         $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"',
@@ -89,12 +106,13 @@ class MySQLAdapter implements IndexAdapterInterface
     {
         $query = $this->connection->prepare(sprintf('
                 INSERT INTO %scontents
-                    (object, field, content) 
-                    VALUES(?, ?, ?)
+                    (object, field, content, created, updated) 
+                    VALUES(?, ?, ?, ? ,?)
                 ',
             $this->configuration['table_prefix']
         ));
-        $query->bind_param("iss", $id, $key, $value);
+        $timestamp = time();
+        $query->bind_param("issii", $id, $key, $value, $timestamp, $timestamp);
         $query->execute();
     }
 
@@ -105,14 +123,15 @@ class MySQLAdapter implements IndexAdapterInterface
         $result = $this->connection->query($query);
         $row = $result->fetch_assoc();
         if (isset($row['id'])) {
+            $timestamp = time();
             $query = $this->connection->prepare(sprintf('
                 UPDATE %sobjects
-                SET data = ?
+                SET data = ?, updated = ?
                 WHERE id = ?
                 ',
                 $this->configuration['table_prefix']
             ));
-            $query->bind_param("si", $data, $row['id']);
+            $query->bind_param("sii", $data, $timestamp, $row['id']);
             $query->execute();
 
             return intval($row['id']);
@@ -120,12 +139,19 @@ class MySQLAdapter implements IndexAdapterInterface
 
         $query = $this->connection->prepare(sprintf('
                 INSERT INTO %sobjects
-                    (objectId, data) 
-                    VALUES(?, ?)
+                    (objectId, data, created, updated) 
+                    VALUES(?, ?, ?, ?)
                 ',
             $this->configuration['table_prefix']
         ));
-        $query->bind_param("ss", $objectId, $data);
+        $timestamp = time();
+        $query->bind_param(
+            "ssii",
+            $objectId,
+            $data,
+            $timestamp,
+            $timestamp
+        );
         $query->execute();
 
         return $query->insert_id;
