@@ -46,6 +46,18 @@ class MySQLAdapterTest extends \PHPUnit_Framework_TestCase
                 $results->count() > 0,
                 'search for "' . $search . '" should' . ($hasResults ? '' : ' not') . ' yield results'
             );
+            $results = $index->search(mb_strtoupper($search));
+            $this->assertEquals(
+                $hasResults,
+                $results->count() > 0,
+                'search for "' . mb_strtoupper($search) . '" should' . ($hasResults ? '' : ' not') . ' yield results'
+            );
+            $results = $index->search(mb_strtolower($search));
+            $this->assertEquals(
+                $hasResults,
+                $results->count() > 0,
+                'search for "' . mb_strtolower($search) . '" should' . ($hasResults ? '' : ' not') . ' yield results'
+            );
         }
     }
 
