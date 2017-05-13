@@ -21,10 +21,19 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @dataProvider getSomeHighlightingTestValues
-     * @param string $comparison
-     * @param boolean $expected
+     * @param $string
+     * @param $words
+     * @param $wrap
+     * @param $crop
+     * @param $prefix
+     * @param $suffix
+     * @param $wordsBeforeMatch
+     * @param $expectation
+     * @internal param string $comparison
+     * @internal param bool $expected
      */
-    public function testHighlighting($string, $words, $wrap, $crop, $prefix, $suffix, $wordsBeforeMatch, $expectation) {
+    public function testHighlighting($string, $words, $wrap, $crop, $prefix, $suffix, $wordsBeforeMatch, $expectation)
+    {
         $highlighter = new SearchWordHighlighter($string);
         $highlighter->setWrap($wrap);
         $highlighter->setCrop($crop);
@@ -34,10 +43,12 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals($highlighter->highlight($words), $expectation);
     }
+
     /**
      * @return array
      */
-    public function getSomeHighlightingTestValues() {
+    public function getSomeHighlightingTestValues()
+    {
         return array(
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -47,7 +58,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => null,
                 'suffix' => null,
                 'wordsBeforeMatch' => null,
-                'expecation' => '<b>Lorem</b> ipsum dolor sit <b>amet</b>, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.'
+                'expecation' => '<b>Lorem</b> ipsum dolor sit <b>amet</b>, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -57,7 +68,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => null,
                 'suffix' => null,
                 'wordsBeforeMatch' => null,
-                'expecation' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi <b>deleniti</b> dolore esseeveniet excepturi ipsum iusto.'
+                'expecation' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi <b>deleniti</b> dolore esseeveniet excepturi ipsum iusto.',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -67,7 +78,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => null,
                 'suffix' => null,
                 'wordsBeforeMatch' => 3,
-                'expecation' => 'elit. Accusamus animi <b>deleniti</b> dolore esseeveniet excepturi ipsum iusto.'
+                'expecation' => 'elit. Accusamus animi <b>deleniti</b> dolore esseeveniet excepturi ipsum iusto.',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -77,7 +88,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => null,
                 'suffix' => null,
                 'wordsBeforeMatch' => 3,
-                'expecation' => 'elit. Accusamus animi <b>deleniti</b> dolore esseeveniet excepturi <b>ipsum</b> iusto.'
+                'expecation' => 'elit. Accusamus animi <b>deleniti</b> dolore esseeveniet excepturi <b>ipsum</b> iusto.',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -87,7 +98,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => null,
                 'suffix' => null,
                 'wordsBeforeMatch' => 3,
-                'expecation' => 'elit. Accusamus animi <b>deleniti</b> dolore esseeveniet'
+                'expecation' => 'elit. Accusamus animi <b>deleniti</b> dolore esseeveniet',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -97,7 +108,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => '...',
                 'suffix' => null,
                 'wordsBeforeMatch' => 3,
-                'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet'
+                'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus animi deleniti dolore esseeveniet excepturi ipsum iusto.',
@@ -107,7 +118,7 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => '...',
                 'suffix' => '...',
                 'wordsBeforeMatch' => 3,
-                'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet...'
+                'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet...',
             ),
             array(
                 'string' => 'Lorem ipsum dolor sit amet, consectetur adipisicing 
@@ -119,8 +130,8 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'prefix' => '...',
                 'suffix' => '...',
                 'wordsBeforeMatch' => 3,
-                'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet...'
-            )
+                'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet...',
+            ),
         );
     }
 }
