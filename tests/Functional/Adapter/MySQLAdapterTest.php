@@ -36,7 +36,7 @@ class MySQLAdapterTest extends \PHPUnit_Framework_TestCase
         $data = [
             'content' => $content,
         ];
-        $id = 'textObject';
+        $id = uniqid();
         $index->addObject($data, $id, 'someIndex');
 
         foreach ($expectations as $search => $hasResults) {

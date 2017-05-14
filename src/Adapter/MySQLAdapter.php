@@ -80,7 +80,7 @@ class MySQLAdapter implements IndexAdapterInterface
 
     public function addObject($object, $objectId, $indexName = null)
     {
-        $id = $this->getObject($objectId, serialize($object));
+        $id = $this->getObject($objectId, serialize($object), $indexName);
         $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"',
             $this->configuration['table_prefix'], $id));
 
@@ -116,7 +116,7 @@ class MySQLAdapter implements IndexAdapterInterface
         $query->execute();
     }
 
-    public function getObject($objectId, $data)
+    public function getObject($objectId, $data, $indexName)
     {
         $query = sprintf('SELECT id FROM %sobjects WHERE objectId = "%s"', $this->configuration['table_prefix'],
             $objectId);
@@ -126,12 +126,12 @@ class MySQLAdapter implements IndexAdapterInterface
             $timestamp = time();
             $query = $this->connection->prepare(sprintf('
                 UPDATE %sobjects
-                SET data = ?, updated = ?
+                SET data = ?, updated = ?, `index` = ?
                 WHERE id = ?
                 ',
                 $this->configuration['table_prefix']
             ));
-            $query->bind_param("sii", $data, $timestamp, $row['id']);
+            $query->bind_param("siis", $data, $timestamp, $row['id'], $indexName);
             $query->execute();
 
             return intval($row['id']);
@@ -139,15 +139,17 @@ class MySQLAdapter implements IndexAdapterInterface
 
         $query = $this->connection->prepare(sprintf('
                 INSERT INTO %sobjects
-                    (objectId, data, created, updated) 
-                    VALUES(?, ?, ?, ?)
+                    (objectId, `index`, data, created, updated) 
+                    VALUES(?, ?, ?, ?, ?)
                 ',
             $this->configuration['table_prefix']
         ));
+
         $timestamp = time();
         $query->bind_param(
-            "ssii",
+            "sssii",
             $objectId,
+            $indexName,
             $data,
             $timestamp,
             $timestamp
