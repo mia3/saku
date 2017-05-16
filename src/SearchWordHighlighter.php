@@ -115,7 +115,7 @@ class SearchWordHighlighter
         $contentWords = preg_split('/[\s]/s', trim($content));
         $word = reset($words);
         foreach ($contentWords as $key => $contentWord) {
-            similar_text(strtolower(trim($contentWord)), strtolower(trim($word)), $match);
+            similar_text(mb_strtolower(trim($contentWord)), mb_strtolower(trim($word)), $match);
             if ($match > 80) {
                 // if the there are less words before the first search word, we can
                 // break here, because cutting before the first word makes no sense
@@ -124,11 +124,11 @@ class SearchWordHighlighter
                 }
 
                 // look for the position of the first search word
-                $startPosition = strpos($content, $contentWord);
+                $startPosition = mb_strpos($content, $contentWord);
 
                 for ($i = 1; $i <= $this->wordsBeforeMatch; $i++) {
                     if (isset($contentWords[$key - $i])) {
-                        $startPosition -= strlen($contentWords[$key - $i]) + 1;
+                        $startPosition -= mb_strlen($contentWords[$key - $i]) + 1;
                     }
                 }
                 $content = $this->prefix . trim(substr($content, $startPosition));

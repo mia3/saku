@@ -23,8 +23,8 @@ class Index
         $this->adapter = new $configuration['adapter']($configuration);
     }
 
-    public function addObject($object, $objectId, $indexName = null) {
-        $this->adapter->addObject($object, $objectId, $indexName);
+    public function addObject($object, $objectId) {
+        $this->adapter->addObject($object, $objectId);
     }
 
     public function search($query, $options = array()) {

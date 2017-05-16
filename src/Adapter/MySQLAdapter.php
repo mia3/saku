@@ -78,9 +78,9 @@ class MySQLAdapter implements IndexAdapterInterface
         ));
     }
 
-    public function addObject($object, $objectId, $indexName = null)
+    public function addObject($object, $objectId)
     {
-        $id = $this->getObject($objectId, serialize($object), $indexName);
+        $id = $this->getObject($objectId, serialize($object));
         $this->connection->query(sprintf('DELETE FROM %scontents WHERE object = "%s"',
             $this->configuration['table_prefix'], $id));
 
@@ -116,7 +116,7 @@ class MySQLAdapter implements IndexAdapterInterface
         $query->execute();
     }
 
-    public function getObject($objectId, $data, $indexName)
+    public function getObject($objectId, $data)
     {
         $query = sprintf('SELECT id FROM %sobjects WHERE objectId = "%s"', $this->configuration['table_prefix'],
             $objectId);
@@ -131,7 +131,7 @@ class MySQLAdapter implements IndexAdapterInterface
                 ',
                 $this->configuration['table_prefix']
             ));
-            $query->bind_param("siis", $data, $timestamp, $row['id'], $indexName);
+            $query->bind_param("siis", $data, $timestamp, $row['id'], $this->configuration['indexName']);
             $query->execute();
 
             return intval($row['id']);
@@ -149,7 +149,7 @@ class MySQLAdapter implements IndexAdapterInterface
         $query->bind_param(
             "sssii",
             $objectId,
-            $indexName,
+            $this->configuration['indexName'],
             $data,
             $timestamp,
             $timestamp

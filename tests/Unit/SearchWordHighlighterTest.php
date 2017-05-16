@@ -132,6 +132,16 @@ class SearchWordHighlighterTest extends \PHPUnit_Framework_TestCase
                 'wordsBeforeMatch' => 3,
                 'expecation' => '...elit. Accusamus animi <b>deleniti</b> dolore esseeveniet...',
             ),
+            array(
+                'string' => 'Lorem ipsum TÜV sit amet, consectetur adipisicing',
+                'words' => "tüv",
+                'wrap' => '<b>|</b>',
+                'crop' => 6,
+                'prefix' => '...',
+                'suffix' => '...',
+                'wordsBeforeMatch' => 3,
+                'expecation' => 'Lorem ipsum <b>TÜV</b> sit amet, consectetur...',
+            ),
         );
     }
 }

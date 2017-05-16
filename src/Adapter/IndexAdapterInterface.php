@@ -11,7 +11,7 @@ namespace MIA3\Saku\Adapter;
 
 interface IndexAdapterInterface
 {
-    public function addObject($object, $objectId, $indexName = null);
+    public function addObject($object, $objectId);
 
     public function getFacet($configuration);
 }
