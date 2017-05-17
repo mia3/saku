@@ -42,6 +42,12 @@ class MySQLAdapter implements IndexAdapterInterface
             $this->configuration['socket']
         );
 
+        $this->connection->query(sprintf(
+            'SET NAMES %s COLLATE %s',
+            $this->configuration['character_set'],
+            $this->configuration['collation']
+        ));
+
         $this->connection->query(sprintf('
                 CREATE TABLE IF NOT EXISTS `%sobjects` (
                     `id` int NOT NULL AUTO_INCREMENT,
@@ -106,7 +112,7 @@ class MySQLAdapter implements IndexAdapterInterface
     {
         $query = $this->connection->prepare(sprintf('
                 INSERT INTO %scontents
-                    (object, field, content, created, updated) 
+                    (object, field, content, created, updated)
                     VALUES(?, ?, ?, ? ,?)
                 ',
             $this->configuration['table_prefix']
@@ -139,7 +145,7 @@ class MySQLAdapter implements IndexAdapterInterface
 
         $query = $this->connection->prepare(sprintf('
                 INSERT INTO %sobjects
-                    (objectId, `index`, data, created, updated) 
+                    (objectId, `index`, data, created, updated)
                     VALUES(?, ?, ?, ?, ?)
                 ',
             $this->configuration['table_prefix']
@@ -197,7 +203,7 @@ class MySQLAdapter implements IndexAdapterInterface
         if (isset($options['facets'])) {
             foreach ($options['facets'] as $facet => $value) {
                 $joins[] = sprintf(
-                    'JOIN %s as facet_%s 
+                    'JOIN %s as facet_%s
                         ON rootContents.object = facet_%s.object' . chr(10),
                     $contentsTable,
                     $facet,
@@ -219,7 +225,7 @@ class MySQLAdapter implements IndexAdapterInterface
         }
         $wheres[] = sprintf(
             '(
-                MATCH(rootContents.content) AGAINST ("%1$s" IN NATURAL LANGUAGE MODE) 
+                MATCH(rootContents.content) AGAINST ("%1$s" IN NATURAL LANGUAGE MODE)
                 OR rootContents.content LIKE "%%%%%1$s%%%%"
              ) AND rootContents.field IN (%2$s)',
             $this->connection->real_escape_string($query),
@@ -239,7 +245,7 @@ class MySQLAdapter implements IndexAdapterInterface
             'SELECT %s
             FROM %s as  rootContents
             ' . implode(" \n", $joins) . '
-            WHERE 
+            WHERE
                 ' . implode(" AND ", $wheres) . '
             GROUP BY %s.id
             ORDER BY score DESC
@@ -269,7 +275,7 @@ class MySQLAdapter implements IndexAdapterInterface
         $contentsTable = $this->configuration['table_prefix'] . 'contents';
         $query = sprintf(
             'SELECT field, content as value, count(id) as count
-            FROM %s 
+            FROM %s
             WHERE field = "%s"
             GROUP BY content
             ',
