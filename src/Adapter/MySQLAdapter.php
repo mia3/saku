@@ -137,7 +137,13 @@ class MySQLAdapter implements IndexAdapterInterface
                 ',
                 $this->configuration['table_prefix']
             ));
-            $query->bind_param("siis", $data, $timestamp, $row['id'], $this->configuration['indexName']);
+            $query->bind_param(
+                "sisi",
+                $data,
+                $timestamp,
+                $this->configuration['indexName'],
+                $row['id']
+            );
             $query->execute();
 
             return intval($row['id']);
