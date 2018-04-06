@@ -246,7 +246,10 @@ class MySQLAdapter implements IndexAdapterInterface
             $objectsTable,
             $objectsTable
         );
-
+        // fix for the mysqli >= 5.7 only_full_group_by bug
+        if($this->connection->server_version >= 50700) {
+            $this->connection->query("SET SESSION sql_mode=''");
+        }
         $query = sprintf(
             'SELECT %s
             FROM %s as  rootContents
