@@ -87,10 +87,12 @@ class SearchWordHighlighter
             $words = preg_split('/[ ,\.\?\-]/s', trim($words, ' ,.?+-'));
         }
 
-        $words = array_filter($words, function($word){
+        $words = array_filter($words, function ($word) {
             return strlen($word) > 1;
         });
 
+        // replace chained whitespace with a single space
+        $string = preg_replace('/[\s]+/s', ' ', $this->string);
         $string = $this->string;
 
         if ($this->wordsBeforeMatch > 0) {
@@ -125,13 +127,12 @@ class SearchWordHighlighter
 
                 // look for the position of the first search word
                 $startPosition = mb_strpos($content, $contentWord);
-
                 for ($i = 1; $i <= $this->wordsBeforeMatch; $i++) {
                     if (isset($contentWords[$key - $i])) {
                         $startPosition -= mb_strlen($contentWords[$key - $i]) + 1;
                     }
                 }
-                $content = $this->prefix . trim(substr($content, $startPosition));
+                $content = $this->prefix . trim(mb_substr($content, $startPosition));
                 break;
             }
         }
