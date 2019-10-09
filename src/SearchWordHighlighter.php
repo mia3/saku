@@ -93,7 +93,7 @@ class SearchWordHighlighter
 
         // replace chained whitespace with a single space
         $string = preg_replace('/[\s]+/s', ' ', $this->string);
-        $string = $this->string;
+        $string = html_entity_decode($string);
 
         if ($this->wordsBeforeMatch > 0) {
             $string = $this->cutBeforeMatch($string, $words);
