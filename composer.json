@@ -1,6 +1,7 @@
 {
     "name": "mia3/saku",
     "description": "search made awesome",
+    "version": "2.0.0",
     "authors": [
         {
             "name": "Marc Neuhaus",
@@ -18,7 +19,6 @@
         }
     },
     "require": {
-        "elasticsearch/elasticsearch": "^2.2",
         "algolia/algoliasearch-client-php": "^1.10"
     },
     "require-dev": {
